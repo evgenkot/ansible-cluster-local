@@ -1,0 +1,25 @@
+---
+- hosts: all
+  gather_facts: no
+  become: true
+  tasks:
+    - name: Disable Root Login with password
+      ansible.builtin.lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: "PermitRootLogin prohibit-password"
+        state: present
+        backup: yes
+      notify:
+        - restart ssh
+    - name: Disable root password
+      ansible.builtin.user:
+        name: root
+        password: "!"
+
+  handlers:
+    - name: Restart ssh
+      ansible.builtin.systemd_service:
+        name: sshd
+        state: restarted
+

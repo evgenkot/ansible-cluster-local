@@ -1,0 +1,25 @@
+---
+- hosts: all
+  tasks:
+  - name: Create a user ansible with a home directory
+    ansible.builtin.user:
+      name: ansibleuser
+      state: present
+      create_home: yes
+      shell: /bin/bash
+      password: "!"
+      groups: wheel
+      append: true
+
+  - name: Nopasswd ansibleuser
+    ansible.builtin.lineinfile:
+      path: /etc/sudoers
+      state: present
+      line: 'ansibleuser ALL=(ALL) NOPASSWD: ALL'
+      validate: 'visudo -cf %s'
+
+  - name: Set authorized key taken from file
+    ansible.posix.authorized_key:
+      user: ansibleuser
+      state: present
+      key: "{{ lookup('file', './keys/id_rsa.pub') }}"
