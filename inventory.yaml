@@ -3,9 +3,19 @@ all:
     machine-01:
       ansible_user: ansibleuser
       ansible_host: 192.168.0.201
+      hostname: k8s-01.knotty.local
+      host_ip: 192.168.0.201
     machine-02:
       ansible_user: ansibleuser
       ansible_host: 192.168.0.202
+      hostname: k8s-02.knotty.local
+      host_ip: 192.168.0.202
     machine-03:
       ansible_user: ansibleuser
       ansible_host: 192.168.0.203
+      hostname: k8s-03.knotty.local
+      host_ip: 192.168.0.203
+
+master:
+  hosts:
+    machine-01:
