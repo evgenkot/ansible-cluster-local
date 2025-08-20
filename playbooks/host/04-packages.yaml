@@ -16,6 +16,7 @@
           - grep
           - gawk
           - nfs-utils
+          - apparmor-parser
         state: present
 
     - name: Install iscsi-initiator-utils
@@ -28,7 +29,7 @@
       ansible.builtin.slurp:
         src: /etc/iscsi/initiatorname.iscsi
       register: initiator_name_content
-      ignore_errors: yes
+      ignore_errors: true
 
     - name: Get the initiator name if not found in initiatorname.iscsi
       ansible.builtin.command: /sbin/iscsi-iname
@@ -44,6 +45,6 @@
     - name: Enable and start iscsid service
       ansible.builtin.systemd:
         name: iscsid
-        enabled: yes
+        enabled: true
         state: started
 

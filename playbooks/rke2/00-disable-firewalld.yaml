@@ -1,0 +1,11 @@
+---
+- hosts: all
+  gather_facts: no
+  become: true
+  tasks:
+    - name: Disable and stop firewalld service
+      ansible.builtin.systemd:
+        name: firewalld
+        enabled: false
+        state: stopped
+      ignore_errors: true

@@ -1,0 +1,92 @@
+---
+- name: Configure NetworkManager for RKE2 (ignore calico/flannel interfaces)
+  gather_facts: no
+  hosts: all
+  become: true
+  vars:
+    nm_conf_dir: /etc/NetworkManager/conf.d
+    nm_conf_file: "{{ nm_conf_dir }}/rke2-canal.conf"
+    nm_conf_content: |
+      [keyfile]
+      unmanaged-devices=interface-name:flannel*;interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:vxlan-v6.calico;interface-name:wireguard.cali;interface-name:wg-v6.cali
+
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Ensure NetworkManager conf.d directory exists
+      ansible.builtin.file:
+        path: "{{ nm_conf_dir }}"
+        state: directory
+        mode: '0755'
+      when:
+        - ansible_facts.services is defined
+        - "'NetworkManager.service' in ansible_facts.services"
+
+    - name: Deploy rke2-canal.conf
+      ansible.builtin.copy:
+        dest: "{{ nm_conf_file }}"
+        content: "{{ nm_conf_content }}"
+        owner: root
+        group: root
+        mode: '0644'
+      register: deployed_conf
+      when:
+        - ansible_facts.services is defined
+        - "'NetworkManager.service' in ansible_facts.services"
+
+    - name: Debug deployed_conf
+      ansible.builtin.debug:
+        msg: db {{ deployed_conf }}
+
+    - name: Determine if RKE2 appears installed (rke2-server or rke2-agent service present)
+      ansible.builtin.set_fact:
+        rke2_installed: >-
+          {{ (ansible_facts.services is defined) and
+             ('rke2-server.service' in ansible_facts.services or
+              'rke2-agent.service' in ansible_facts.services) }}
+
+    - name: Disable and stop nm-cloud-setup.service if present
+      ansible.builtin.systemd:
+        name: nm-cloud-setup.service
+        enabled: false
+        masked: true
+        state: stopped
+      when: ansible_facts.services is defined and 'nm-cloud-setup.service' in ansible_facts.services
+
+    - name: Disable and stop nm-cloud-setup.timer if present
+      ansible.builtin.systemd:
+        name: nm-cloud-setup.timer
+        enabled: false
+        masked: true
+        state: stopped
+      when: ansible_facts.services is defined and 'nm-cloud-setup.timer' in ansible_facts.services
+
+    - name: Reload NetworkManager if present and RKE2 is NOT installed
+      ansible.builtin.systemd:
+        name: NetworkManager
+        state: reloaded
+      when:
+        - deployed_conf.changed
+        - ansible_facts.services is defined
+        - "'NetworkManager.service' in ansible_facts.services"
+        - not rke2_installed
+
+    - name: If RKE2 is installed, reboot so NetworkManager changes fully apply
+      ansible.builtin.reboot:
+        msg: "Reboot initiated by Ansible to apply NetworkManager RKE2 config (rke2 detected)."
+        pre_reboot_delay: 1
+        reboot_timeout: 1200
+      when:
+        - deployed_conf.changed
+        - rke2_installed
+        - ansible_facts.services is defined
+        - "'NetworkManager.service' in ansible_facts.services"
+
+    - name: Report actions performed
+      ansible.builtin.debug:
+        msg: >-
+          "rke2_installed={{ rke2_installed }}, deployed_conf.changed={{ deployed_conf.changed }}.
+          nm-cloud-setup.service present={{ ('nm-cloud-setup.service' in ansible_facts.services) if (ansible_facts.services is defined) else 'unknown' }}.
+          NetworkManager present={{ ('NetworkManager.service' in ansible_facts.services) if (ansible_facts.services is defined) else 'unknown' }}."
+
