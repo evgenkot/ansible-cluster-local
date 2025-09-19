@@ -35,10 +35,6 @@
         - ansible_facts.services is defined
         - "'NetworkManager.service' in ansible_facts.services"
 
-    - name: Debug deployed_conf
-      ansible.builtin.debug:
-        msg: db {{ deployed_conf }}
-
     - name: Determine if RKE2 appears installed (rke2-server or rke2-agent service present)
       ansible.builtin.set_fact:
         rke2_installed: >-
