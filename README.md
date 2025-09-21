@@ -37,6 +37,11 @@ ansible-playbook 02-host-init.yaml
 ansible-playbook 03-rke2-install.yaml
 ```
 
+Check
+```
+kubectl --kubeconfig keys/rke2.yaml get po -A
+```
+
 (Optional) Keygen
 ```
 ssh-keygen -q -t rsa -f ./keys/id_rsa -b 4096 -C "" -N ""

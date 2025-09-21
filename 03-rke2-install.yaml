@@ -7,7 +7,7 @@
     rke2_token_file: "{{ playbook_dir }}/keys/rke2_token.yaml"
     force_regenerate: false
 
-  tasks:
+  pre_tasks:
     - name: Ensure keys directory exists
       ansible.builtin.file:
         path: "{{ rke2_token_file | dirname }}"

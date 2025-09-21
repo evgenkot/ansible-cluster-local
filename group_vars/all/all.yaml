@@ -19,11 +19,14 @@ rke2_additional_sans:
   - k8s-03.knotty.local
   - 192.168.0.203
 rke2_cluster_domain: cluster.knotty.local
-rke2_server_node_taints:
-  - 'CriticalAddonsOnly=true:NoExecute'
+rke2_server_node_taints: []
+rke2_agent_node_taints: []
 rke2_ingress_controller: none
 rke2_cni:
   - canal
+
+rke2_download_kubeconf_file_name: rke2.yaml
+rke2_download_kubeconf_path: ./keys
 
 # To work with jumpserver you can
 # ansible_ssh_common_args: '-o ProxyCommand="ssh -p 92 -i ~/.ssh/id_ed25519 -W %h:%p -q user@chel.knotty.pw"'
