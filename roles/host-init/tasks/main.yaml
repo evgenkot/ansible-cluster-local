@@ -1,0 +1,24 @@
+---
+- name: Print return information from the previous task
+  ansible.builtin.debug:
+    var: rke2_token
+
+- name: Host configuration
+  ansible.builtin.include_tasks: 01-host-config.yaml
+
+- name: Install required packages
+  ansible.builtin.include_tasks: 02-packages.yaml
+
+- name: Configure Network for CNI
+  vars:
+    nm_conf_dir: /etc/NetworkManager/conf.d
+    nm_conf_file: "{{ nm_conf_dir }}/rke2-canal.conf"
+    nm_conf_content: |
+      [keyfile]
+      unmanaged-devices=interface-name:flannel*;interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:vxlan-v6.calico;interface-name:wireguard.cali;interface-name:wg-v6.cali
+  ansible.builtin.include_tasks: 03-network.yaml
+
+- name: Configure Iscsi for CSI
+  vars:
+    initiator_name: 'none'
+  ansible.builtin.include_tasks: 04-iscsi.yaml

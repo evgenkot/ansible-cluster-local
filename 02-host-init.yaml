@@ -1,0 +1,7 @@
+---
+- name: Config host
+  hosts: all
+  gather_facts: no
+  become: true
+  roles:
+     - role: host-init

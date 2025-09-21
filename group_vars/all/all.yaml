@@ -1,5 +1,30 @@
 system:
+  lock_root: true
   timezone: "Asia/Yekaterinburg"
   locale: 'en_US.UTF-8'
 
+rke2_ha_mode: true
+rke2_api_ip : 192.168.0.200
+rke2_download_kubeconf: true
+rke2_version: v1.33.4+rke2r1
+rke2_install_script_dir: /var/lib/
+rke2_additional_sans:
+  - k8s.knotty.local
+  - k8s-00.knotty.local
+  - 192.168.0.200
+  - k8s-01.knotty.local
+  - 192.168.0.201
+  - k8s-02.knotty.local
+  - 192.168.0.202
+  - k8s-03.knotty.local
+  - 192.168.0.203
+rke2_cluster_domain: cluster.knotty.local
+rke2_server_node_taints:
+  - 'CriticalAddonsOnly=true:NoExecute'
+rke2_ingress_controller: none
+rke2_cni:
+  - canal
 
+# To work with jumpserver you can
+# ansible_ssh_common_args: '-o ProxyCommand="ssh -p 92 -i ~/.ssh/id_ed25519 -W %h:%p -q user@chel.knotty.pw"'
+# rke2_token: will be defined in 03-rke2-install.yaml

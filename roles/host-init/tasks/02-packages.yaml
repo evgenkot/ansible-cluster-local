@@ -1,0 +1,19 @@
+---
+- name: Packages
+  ansible.builtin.package:
+    name:
+      - tmux
+      - vim
+      - bash
+      - curl
+      - wget
+      - jq
+      - util-linux
+      - grep
+      - gawk
+      - nfs-utils
+#       - apparmor-parser
+      - iptables
+      - iptables-services
+      - iptables-nft
+    state: present

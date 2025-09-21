@@ -1,0 +1,110 @@
+---
+# ansible-playbook create-user.yaml -e "ansible_user=root" --ask-pass
+- name: Generate SSH keypair on controller
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    keys_dir: "{{ playbook_dir }}/keys"
+    private_key_path: "{{ keys_dir }}/id_rsa"
+    public_key_path: "{{ keys_dir }}/id_rsa.pub"
+    key_type: rsa
+    key_bits: 4096
+    key_comment: ""
+    force_regenerate: false
+  tasks:
+    - name: Ensure keys directory exists
+      ansible.builtin.file:
+        path: "{{ keys_dir }}"
+        state: directory
+        mode: "0700"
+
+    - name: Check for existing private key
+      ansible.builtin.stat:
+        path: "{{ private_key_path }}"
+      register: id_rsa_stat
+
+    - name: Generate openssh keypair
+      ansible.builtin.openssh_keypair:
+        path: "{{ private_key_path }}"
+        type: "{{ key_type }}"
+        size: "{{ key_bits }}"
+        comment: "{{ key_comment }}"
+        force: "{{ force_regenerate | bool }}"
+      register: openssh_keypair_result
+      changed_when: openssh_keypair_result.changed is defined and openssh_keypair_result.changed
+      when: force_regenerate or not id_rsa_stat.stat.exists
+
+    - name: Ensure private key has correct permissions
+      ansible.builtin.file:
+        path: "{{ private_key_path }}"
+        mode: "0600"
+      when: id_rsa_stat.stat.exists or (openssh_keypair_result is defined and openssh_keypair_result.changed)
+
+    - name: Ensure public key exists
+      ansible.builtin.stat:
+        path: "{{ public_key_path }}"
+      register: id_rsa_pub_stat
+      run_once: true
+
+    - name: Fail if public key missing after generation
+      ansible.builtin.fail:
+        msg: "Public key {{ public_key_path }} is missing; key generation failed."
+      when: not id_rsa_pub_stat.stat.exists
+      run_once: true
+
+- name: Create ansibleuser and install public key on remote hosts
+  hosts: all
+  gather_facts: yes
+  become: true
+  vars:
+    public_key_path: "{{ playbook_dir }}/keys/id_rsa.pub"
+    ansible_username: ansibleuser
+    sudoers_line: "{{ ansible_username }} ALL=(ALL) NOPASSWD: ALL"
+  tasks:
+
+    - name: Create a user '{{ ansible_username }}' with a home directory
+      ansible.builtin.user:
+        name: "{{ ansible_username }}"
+        state: present
+        create_home: yes
+        shell: /bin/bash
+        password: "!"
+        groups: wheel
+        append: true
+
+    - name: Ensure sudoers entry for '{{ ansible_username }}' (NOPASSWD)
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers
+        state: present
+        line: "{{ sudoers_line }}"
+        validate: 'visudo -cf %s'
+
+    - name: Add generated public key to '{{ ansible_username }}' authorized_keys
+      ansible.posix.authorized_key:
+        user: "{{ ansible_username }}"
+        state: present
+        key: "{{ lookup('file', public_key_path) }}"
+
+    - name: Disable Root Login with password in sshd_config
+      ansible.builtin.lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: "PermitRootLogin prohibit-password"
+        state: present
+        backup: yes
+      notify:
+        - Restart ssh
+      when: system.lock_root | default(false)
+
+    - name: Disable root password
+      ansible.builtin.user:
+        name: root
+        password: "!"
+      when: system.lock_root | default(false)
+
+  handlers:
+    - name: Restart ssh
+      ansible.builtin.systemd:
+        name: sshd
+        state: restarted

@@ -1,0 +1,52 @@
+---
+- name: Ensure rke2 token exists on controller
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    rke2_token_file: "{{ playbook_dir }}/keys/rke2_token.yaml"
+    force_regenerate: false
+
+  tasks:
+    - name: Ensure keys directory exists
+      ansible.builtin.file:
+        path: "{{ rke2_token_file | dirname }}"
+        state: directory
+        mode: "0700"
+
+    - name: Check if rke2 token file exists
+      ansible.builtin.stat:
+        path: "{{ rke2_token_file }}"
+      register: rke2_token_file_stat
+
+    - name: Generate rke2 token (controller)
+      ansible.builtin.command: "openssl rand -hex 16"
+      register: generated_token
+      changed_when: true
+      when: force_regenerate or not rke2_token_file_stat.stat.exists
+
+    - name: Write rke2 token file (controller)
+      ansible.builtin.copy:
+        dest: "{{ rke2_token_file }}"
+        content: "rke2_token: {{ (generated_token.stdout if (generated_token is defined) else lookup('file', rke2_token_file)).strip() }}\n"
+        mode: "0600"
+      when: force_regenerate or not rke2_token_file_stat.stat.exists
+
+    - name: Validate existing token file is readable (controller)
+      ansible.builtin.include_vars:
+        file: "{{ rke2_token_file }}"
+      when: rke2_token_file_stat.stat.exists and not force_regenerate
+
+    - name: Reload token into play context (controller)
+      ansible.builtin.include_vars:
+        file: "{{ rke2_token_file }}"
+
+- name: Install RKE2 on all targets
+  hosts: all
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - "{{ playbook_dir }}/keys/rke2_token.yaml"
+  roles:
+    - role: ansible-role-rke2
+
