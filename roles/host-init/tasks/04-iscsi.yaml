@@ -1,30 +1,68 @@
 ---
-- name: Install iscsi-initiator-utils
+- name: Ensure iscsi-initiator-utils is installed
   ansible.builtin.package:
-    name:
-      - iscsi-initiator-utils
+    name: iscsi-initiator-utils
     state: present
+  become: true
 
-- name: Get current initiator name from initiatorname.iscsi
+- name: Check for existing initiator file
+  ansible.builtin.stat:
+    path: /etc/iscsi/initiatorname.iscsi
+  register: initiator_stat
+  become: true
+
+- name: Read initiator file if present
   ansible.builtin.slurp:
     src: /etc/iscsi/initiatorname.iscsi
-  register: initiator_name_content
-  ignore_errors: true
+  register: initiator_slurp
+  when: initiator_stat.stat.exists
+  become: true
 
-- name: Get the initiator name if not found in initiatorname.iscsi
-  ansible.builtin.command: /sbin/iscsi-iname
-  register: initiator_name
-  when: initiator_name_content.failed
+- name: Extract InitiatorName from file (if present)
+  ansible.builtin.set_fact:
+    initiator_name_from_file: >-
+      {{ (
+          (initiator_slurp.content | b64decode).splitlines()
+          | select('match','^InitiatorName=')
+          | list
+          | first
+          | default('')
+        ) | regex_replace('^InitiatorName=','') }}
+  when:
+    - initiator_stat.stat.exists
+    - initiator_slurp is defined
+  become: true
 
-- name: Write the initiator name to initiatorname.iscsi
-  ansible.builtin.copy:
-    dest: /etc/iscsi/initiatorname.iscsi
-    content: "InitiatorName={{ initiator_name.stdout }}\n"
-  when: initiator_name_content.failed
+- name: Get initiator name from iscsi-iname when file has no InitiatorName
+  ansible.builtin.command:
+    cmd: /sbin/iscsi-iname
+  register: iscsi_iname
+  changed_when: false
+  failed_when: iscsi_iname.rc != 0 and iscsi_iname.rc is not none
+  when: initiator_name_from_file | default('') == ''
+  become: true
+
+- name: Determine final initiator name
+  ansible.builtin.set_fact:
+    final_initiator_name: >-
+      {{ initiator_name_from_file | default(iscsi_iname.stdout | default('')) }}
+
+- name: Show chosen initiator name
+  ansible.builtin.debug:
+    var: final_initiator_name
+
+- name: Ensure InitiatorName is present in /etc/iscsi/initiatorname.iscsi
+  ansible.builtin.lineinfile:
+    path: /etc/iscsi/initiatorname.iscsi
+    create: yes
+    regexp: '^InitiatorName='
+    line: "InitiatorName={{ final_initiator_name }}"
+    backup: yes
+  become: true
 
 - name: Enable and start iscsid service
   ansible.builtin.systemd:
     name: iscsid
     enabled: true
     state: started
-
+  become: true

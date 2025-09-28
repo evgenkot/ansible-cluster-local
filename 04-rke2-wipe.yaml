@@ -1,0 +1,13 @@
+---
+- name: Uninstall RKE2 from remote hosts
+  hosts: all
+  become: true
+  tasks:
+    - name: Run rke2-uninstall.sh
+      ansible.builtin.shell:
+        cmd: "/usr/local/bin/rke2-uninstall.sh"
+      register: uninstall_output
+
+    - name: Display uninstall output
+      debug:
+        var: uninstall_output

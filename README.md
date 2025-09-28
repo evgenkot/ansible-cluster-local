@@ -22,6 +22,12 @@ vi /etc/ssh/sshd_config
 PermitRootLogin yes
 ```
 
+Extend root partition (Optional)
+```
+growpart /dev/sda 4
+xfs_growfs /
+```
+
 Ansible activate
 ```
 python3 -m venv .venv
