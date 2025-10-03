@@ -28,6 +28,11 @@ growpart /dev/sda 4
 xfs_growfs /
 ```
 
+For now you should disable SELINUX
+```
+sudo sed -i "s|SELINUX=enforcing|SELINUX=disabled|" /etc/selinux/config
+```
+
 Ansible activate
 ```
 python3 -m venv .venv

@@ -26,9 +26,9 @@ rke2_version: v1.33.4+rke2r1
 rke2_install_script_dir: /var/lib/
 rke2_server_node_taints: []
 rke2_ingress_controller: none
-rke2_selinux: true
+rke2_selinux: false
 
-# rke2_airgap_mode: true
+rke2_airgap_mode: true
 
 # To work with jumpserver you can
 # ansible_ssh_common_args: '-o ProxyCommand="ssh -p 92 -i ~/.ssh/id_ed25519 -W %h:%p -q user@chel.knotty.pw"'

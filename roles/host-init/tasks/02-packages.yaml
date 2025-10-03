@@ -1,4 +1,9 @@
 ---
+- name: Import rancher rpm key
+  ansible.builtin.rpm_key:
+    state: present
+    key: https://rpm.rancher.io/public.key
+
 - name: Packages
   ansible.builtin.package:
     name:
@@ -16,4 +21,6 @@
       - iptables
       - iptables-services
       - iptables-nft
+      - container-selinux
+      - https://github.com/rancher/rke2-selinux/releases/download/v0.21.stable.1/rke2-selinux-0.21-1.el9.noarch.rpm
     state: present
