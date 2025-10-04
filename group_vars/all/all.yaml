@@ -15,6 +15,7 @@ rke2_additional_sans:
   - 192.168.0.202
   - k8s-03.knotty.local
   - 192.168.0.203
+  - k8s-chel.knotty.pw
 rke2_cni:
   - canal
 rke2_cluster_domain: cluster.knotty.local
