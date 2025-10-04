@@ -5,16 +5,25 @@ all:
       ansible_host: 192.168.0.201
       hostname: k8s-01.knotty.local
       host_ip: 192.168.0.201
+      k8s_node_label:
+        - "node-role.knotty.pw/gateway=true"
+        - "node-role.knotty.pw/storage=true"
     machine-02:
       ansible_user: ansibleuser
       ansible_host: 192.168.0.202
       hostname: k8s-02.knotty.local
       host_ip: 192.168.0.202
+      k8s_node_label:
+        - "node-role.knotty.pw/gateway=true"
+        - "node-role.knotty.pw/storage=true"
     machine-03:
       ansible_user: ansibleuser
       ansible_host: 192.168.0.203
       hostname: k8s-03.knotty.local
       host_ip: 192.168.0.203
+      k8s_node_label:
+        - "node-role.knotty.pw/gateway=true"
+        - "node-role.knotty.pw/storage=true"
 
 masters:
   hosts:
