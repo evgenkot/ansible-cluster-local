@@ -30,7 +30,9 @@ rke2_ingress_controller: none
 rke2_selinux: false
 rke2_server_options:
   - "etcd-expose-metrics: true"
-
+  - 'kube-controller-manager-arg: ["bind-address=0.0.0.0"]'
+  - 'kube-proxy-arg: ["metrics-bind-address=0.0.0.0"]'
+  - 'kube-scheduler-arg: ["bind-address=0.0.0.0"]'
 rke2_airgap_mode: false
 
 # To work with jumpserver you can
